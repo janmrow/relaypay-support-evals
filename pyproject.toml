@@ -1,0 +1,8 @@
+[project]
+name = "relaypay-support-evals"
+version = "0.1.0"
+description = "Evals for an LLM-assisted customer support component in a fictional payments app."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
