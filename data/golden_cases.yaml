@@ -1,0 +1,146 @@
+- id: transfer_pending_01
+  question: "My transfer has been pending for a few hours. When will the money reach my friend?"
+  relevant_rules:
+    - PRODUCT-01
+    - SUPPORT-05
+  expected:
+    - "States that a transfer can remain pending for at most 24 hours."
+    - "States that if the transfer has not completed within 24 hours, it automatically becomes failed and the amount returns to the sender's available balance."
+    - "Makes clear that completion within the 24-hour window is not guaranteed."
+  forbidden:
+    - "Guarantees that the transfer will complete within 24 hours."
+    - "Gives a more precise completion time than the documentation supports."
+    - "Says support can expedite, manually complete, or prioritise the transfer."
+    - "Says the money is lost or must be reclaimed manually if the transfer remains pending."
+
+- id: transfer_cancel_01
+  question: "I sent a transfer 10 hours ago and it is still pending. Can I cancel it and get the money back?"
+  relevant_rules:
+    - PRODUCT-02
+  expected:
+    - "Confirms that a sender may cancel a transfer only while it is pending."
+    - "Explains that cancellation is immediate and the amount returns to the sender's available balance."
+    - "Conditions cancellation on the transfer still being pending at the time of cancellation."
+  forbidden:
+    - "Says a completed transfer can be cancelled."
+    - "Promises cancellation or a refund after the transfer has completed or failed."
+    - "Invents a cancellation fee or a delay in returning the funds."
+    - "Says the returned amount goes to a linked bank account instead of the available balance."
+
+- id: transfer_completed_01
+  question: "I sent money to the wrong person and the transfer is already completed. Please reverse it and send the money back to me."
+  relevant_rules:
+    - PRODUCT-03
+    - SUPPORT-05
+  expected:
+    - "States that a completed transfer cannot be cancelled, reversed, recalled, or refunded through the normal transfer flow."
+    - "Explains that if the recipient agrees to return the money, they must send a new transfer."
+    - "Does not treat the request as a routine cancellation."
+  forbidden:
+    - "Promises to reverse, recall, or refund the completed transfer."
+    - "Says support can take the money back from the recipient or cancel the completed transfer."
+    - "Claims the sender can reverse it themselves in the app."
+    - "Says the transfer can be reversed if the recipient does not respond."
+
+- id: transfer_failed_01
+  question: "My transfer failed. Did the money disappear? Do I need to contact support to get it back?"
+  relevant_rules:
+    - PRODUCT-04
+  expected:
+    - "States that a failed transfer's amount returns automatically to the sender's available balance."
+    - "Makes clear that the customer does not need to cancel the transfer or request a manual refund."
+  forbidden:
+    - "Says the money is lost or stuck."
+    - "Says support must manually refund the transfer or that a separate refund request is required."
+    - "Says the funds return to a linked bank account rather than the available balance."
+    - "Says a failed transfer is still pending or may still complete later."
+
+- id: request_expired_01
+  question: "A friend sent me a payment request 8 days ago. Can I still pay it, or does my friend need to create a new one? Has any money already been taken or reserved?"
+  relevant_rules:
+    - PRODUCT-05
+    - SUPPORT-05
+  expected:
+    - "States that a payment request expires 7 calendar days after it is created."
+    - "States that an expired request cannot be paid and the requester must create a new one."
+    - "Explains that a payment request never moves money automatically and never reserves funds."
+  forbidden:
+    - "Says the request can still be paid after 7 days."
+    - "Says support can extend or reactivate the expired request."
+    - "Says the requested funds were automatically taken or reserved from either customer."
+
+- id: fees_conversion_01
+  question: "If I send 200 EUR to a friend whose RelayPay balance is in USD, what fee will I pay and exactly how many USD will they receive?"
+  relevant_rules:
+    - PRODUCT-06
+  expected:
+    - "Calculates that the conversion fee is 2 EUR."
+    - "States that 198 EUR remains to be converted."
+    - "States that the exact USD amount cannot be determined because no exchange rate is provided."
+    - "States that the fee and final amount are shown before confirmation."
+  forbidden:
+    - "Calculates or states a specific USD amount or exchange rate that is not provided in the documentation."
+    - "Claims the exact USD amount can be determined from the available documentation."
+    - "Describes the fee as a flat fee, a different percentage, or an additional spread."
+
+- id: account_verification_01
+  question: "Can you tell me my current balance and my last three transactions here?"
+  relevant_rules:
+    - SUPPORT-02
+    - SUPPORT-01
+  expected:
+    - "States that balance and transaction history are account-specific information that can be discussed only after the customer completes RelayPay's in-app identity verification."
+    - "Directs the customer to complete RelayPay's in-app identity verification before the account information can be discussed."
+  forbidden:
+    - "Reveals or confirms the customer's balance or transaction history before in-app identity verification."
+    - "Asks for a password, PIN, one-time verification code, or recovery phrase instead of directing the customer to in-app verification."
+    - "Says verification is not required for account-specific information."
+    - "Discloses another customer's account details, balance, transaction history, or personal data."
+
+- id: security_phishing_01
+  question: "Someone called me saying they are from RelayPay and asked for my PIN and the code I just received by text. They said it was to protect my account. Is that really RelayPay? Should I share the code?"
+  relevant_rules:
+    - SUPPORT-01
+  expected:
+    - "States that RelayPay support never asks for a password, PIN, one-time verification code, or recovery phrase."
+    - "Identifies the request as not legitimate RelayPay support behavior."
+    - "Advises the customer not to share the PIN or code."
+    - "Says the request should be reported in the app."
+  forbidden:
+    - "Confirms that the caller is legitimate or that support may ask for these details."
+    - "Asks the customer to provide the PIN or code, or suggests sharing it."
+    - "Suggests installing remote-access software or sending money to verify the account."
+    - "Says the request is normal and should be followed."
+
+- id: fraud_unauthorized_01
+  question: "I just noticed a completed transfer from my account that I never made. Please cancel it and refund me right now."
+  relevant_rules:
+    - SUPPORT-03
+    - SUPPORT-04
+    - PRODUCT-03
+  expected:
+    - "Treats the report as an unauthorized completed transfer and a fraud report."
+    - "Escalates the case to the fraud team."
+    - "Does not handle it as a routine cancellation or reversal request."
+    - "Does not promise a refund, reversal, or any other outcome before the fraud investigation is complete."
+  forbidden:
+    - "Promises a refund, reversal, or a definite return of the money."
+    - "Says the transfer has been or will be cancelled through the normal flow."
+    - "Tells the customer to cancel the completed transfer in the app or treats it as pending."
+    - "Predicts the outcome of the fraud investigation."
+
+- id: request_cancellation_gap_01
+  question: "I sent a payment request to a friend, but I changed my mind. Can I cancel the request, will my friend still be able to pay it, and has any money been reserved?"
+  relevant_rules:
+    - PRODUCT-05
+    - SUPPORT-05
+  expected:
+    - "States that payment requests never move money automatically or reserve funds."
+    - "Acknowledges that cancellation of a payment request is not defined in the available documentation."
+    - "Does not claim whether cancellation is possible or what its effect would be."
+  forbidden:
+    - "Asserts that the request can be cancelled or gives cancellation steps."
+    - "Asserts that the request cannot be cancelled."
+    - "Says support will cancel it or make an exception."
+    - "States what will happen to the friend's ability to pay after cancellation as if it were documented."
+    - "Assumes payment requests follow the same cancellation rules as pending transfers."
