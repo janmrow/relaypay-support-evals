@@ -12,11 +12,13 @@ This project focuses on evaluating that component rather than building a complet
 
 ## Current state
 
-The project defines the ground truth and golden dataset, and can now generate one LLM response for a single golden case using a known-good context.
+The project defines the ground truth and golden dataset, can generate one LLM response for a single golden case using a known-good context, and can evaluate that response with a first deterministic oracle for one case (`fees_conversion_01`).
 
 The generator loads a case by ID, reads the rules listed in `relevant_rules` directly from `knowledge/`, and sends the customer question plus those rule texts to Claude Haiku 5.5 through OpenCode Console (pay-as-you-go; Go is meant for coding-agent traffic).
 
-Retrieval and evaluation are not implemented yet. There is no automatic rule selection, test oracle, scoring, or eval runner for the whole dataset.
+The eval runner (`eval.py`) keeps generation and evaluation separate: it reuses the generation path, passes the LLM response to `oracle.evaluate()`, and prints the response plus a per-check `PASS`/`FAIL` result. The oracle is case-specific and checks surface-level properties (numbers, forbidden tokens, a few paraphrases), not full meaning.
+
+Retrieval is not implemented yet. There is no automatic rule selection, scoring, or eval runner for the whole dataset.
 
 This is intentional: generation is tested first with known-good context so that generation failures can be understood separately from retrieval failures.
 
@@ -31,9 +33,13 @@ relaypay-support-evals/
 │   └── support-policy.md
 ├── relaypay_support_evals/
 │   ├── __init__.py
-│   └── generate.py
+│   ├── generate.py
+│   ├── oracle.py
+│   └── eval.py
 ├── tests/
-│   └── test_generate.py
+│   ├── test_generate.py
+│   ├── test_oracle.py
+│   └── test_eval.py
 ├── .env.example
 ├── .gitignore
 ├── LICENSE
@@ -83,6 +89,16 @@ uv run python -m relaypay_support_evals.generate --case transfer_pending_01
 
 The command prints the case ID, the rule IDs used, and the model's response. It makes one real LLM request.
 
+## Evaluate one golden case
+
+Run the full path for the supported case:
+
+```bash
+uv run python -m relaypay_support_evals.eval --case fees_conversion_01
+```
+
+The command generates the response as above, then evaluates it with the deterministic oracle and prints each check plus the final `PASS`/`FAIL`. It makes one real LLM request. The process exits with code 0 on `PASS` and 1 on `FAIL`, so it can be used from CI/scripts. Other case IDs are rejected with a clear error: the oracle only supports `fees_conversion_01` so far.
+
 Run the deterministic tests:
 
 ```bash
@@ -115,7 +131,7 @@ Retrieval selects relevant knowledge for the question. The LLM uses that context
 
 At this stage, `relevant_rules` in each golden case provides the known-good context directly, so generation can be tested without retrieval.
 
-Retrieval and test oracles are separate future steps: retrieval will select knowledge automatically, while test oracles will evaluate whether the generated response satisfies the golden case criteria.
+A first deterministic oracle for `fees_conversion_01` exists already; retrieval and broader oracles are separate future steps: retrieval will select knowledge automatically, while further oracles will cover cases that need semantic judgment.
 
 ## Key concepts
 
@@ -134,21 +150,15 @@ Retrieval and test oracles are separate future steps: retrieval will select know
 The current executable path is:
 
 ```text
-one golden case
+one golden case (fees_conversion_01)
 → known-good context from relevant_rules
 → one LLM response
-```
-
-The next step is to evaluate that response while keeping the context fixed:
-
-```text
-one golden case
-→ known-good context
-→ one LLM response
-→ one simple oracle
+→ one deterministic oracle
 → one evaluation result
 ```
 
-Retrieval will be added later, after generation and evaluation can be understood independently.
+The next step is to extend evaluation to more cases: semantic judgments that a surface-form oracle cannot cover will need a human rubric or, later, an LLM-based judge.
+
+Retrieval will be added after generation and evaluation can be understood independently.
 
 The implementation should stay intentionally small and make each part of the flow easy to understand.
