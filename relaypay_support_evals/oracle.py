@@ -8,7 +8,8 @@ handling belongs to a future semantic or LLM-based judge.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+
+from relaypay_support_evals.results import CheckResult, EvalResult
 
 
 CASE_ID = "fees_conversion_01"
@@ -47,20 +48,6 @@ _EXCHANGE_RATE_VALUE = re.compile(
 )
 _WRONG_FEE_MODEL = re.compile(r"\bflat\s+fee\b|\bspread\b", re.IGNORECASE)
 _BEFORE_CONFIRM = re.compile(r"before\s+(you\s+)?confirm", re.IGNORECASE)
-
-
-@dataclass(frozen=True)
-class CheckResult:
-    name: str
-    passed: bool
-    detail: str
-
-
-@dataclass(frozen=True)
-class EvalResult:
-    case_id: str
-    passed: bool
-    checks: list[CheckResult]
 
 
 def _check_fee_is_2_eur(response: str) -> CheckResult:

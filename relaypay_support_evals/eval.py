@@ -6,16 +6,35 @@ from typing import Any
 import anthropic
 import yaml
 
+from relaypay_support_evals import semantic_judge
 from relaypay_support_evals.generate import generate
-from relaypay_support_evals.oracle import EvalResult, assert_supported, evaluate
+from relaypay_support_evals.oracle import CASE_ID as DETERMINISTIC_CASE, evaluate
+from relaypay_support_evals.results import EvalResult
+
+
+SUPPORTED_CASES = {
+    DETERMINISTIC_CASE,
+    semantic_judge.CASE_ID,
+}
 
 
 def run_eval(
     case_id: str,
 ) -> tuple[dict[str, Any], list[tuple[str, str]], str, EvalResult]:
-    assert_supported(case_id)
+    if case_id not in SUPPORTED_CASES:
+        supported = ", ".join(sorted(SUPPORTED_CASES))
+        raise ValueError(
+            f"Unsupported case {case_id!r}. "
+            f"Supported cases: {supported}."
+        )
+
     case, rules, answer = generate(case_id)
-    result = evaluate(answer, case_id=case["id"])
+
+    if case_id == semantic_judge.CASE_ID:
+        result = semantic_judge.evaluate(answer, case)
+    else:
+        result = evaluate(answer, case_id=case_id)
+
     return case, rules, answer, result
 
 

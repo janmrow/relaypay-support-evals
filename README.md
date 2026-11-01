@@ -12,11 +12,14 @@ This project focuses on evaluating that component rather than building a complet
 
 ## Current state
 
-The project defines the ground truth and golden dataset, can generate one LLM response for a single golden case using a known-good context, and can evaluate that response with a first deterministic oracle for one case (`fees_conversion_01`).
+The project defines the ground truth and golden dataset, can generate one LLM response for a single golden case using a known-good context, and can evaluate that response with two different evaluators:
 
-The generator loads a case by ID, reads the rules listed in `relevant_rules` directly from `knowledge/`, and sends the customer question plus those rule texts to Claude Haiku 5.5 through OpenCode Console (pay-as-you-go; Go is meant for coding-agent traffic).
+- A **deterministic oracle** for `fees_conversion_01` that checks surface-level properties (numbers, forbidden tokens, a few paraphrases).
+- A **semantic LLM judge** for `request_cancellation_gap_01` that reads the `expected` and `forbidden` criteria from the golden dataset and decides whether the response satisfies them in meaning, not wording.
 
-The eval runner (`eval.py`) keeps generation and evaluation separate: it reuses the generation path, passes the LLM response to `oracle.evaluate()`, and prints the response plus a per-check `PASS`/`FAIL` result. The oracle is case-specific and checks surface-level properties (numbers, forbidden tokens, a few paraphrases), not full meaning.
+The generator loads a case by ID, reads the rules listed in `relevant_rules` directly from `knowledge/`, and sends the customer question plus those rule texts to Claude Haiku 5.5 through OpenCode Console (pay-as-you-go; Go is meant for coding-agent traffic). The generator never sees `expected` or `forbidden`; those belong only to evaluation.
+
+The eval runner (`eval.py`) keeps generation and evaluation separate: it reuses the generation path, routes the case to the right evaluator, and prints the response plus a per-check `PASS`/`FAIL` result.
 
 Retrieval is not implemented yet. There is no automatic rule selection, scoring, or eval runner for the whole dataset.
 
@@ -35,10 +38,13 @@ relaypay-support-evals/
 │   ├── __init__.py
 │   ├── generate.py
 │   ├── oracle.py
+│   ├── semantic_judge.py
+│   ├── results.py
 │   └── eval.py
 ├── tests/
 │   ├── test_generate.py
 │   ├── test_oracle.py
+│   ├── test_semantic_judge.py
 │   └── test_eval.py
 ├── .env.example
 ├── .gitignore
@@ -91,13 +97,23 @@ The command prints the case ID, the rule IDs used, and the model's response. It 
 
 ## Evaluate one golden case
 
-Run the full path for the supported case:
+Run the full path for the supported deterministic case:
 
 ```bash
 uv run python -m relaypay_support_evals.eval --case fees_conversion_01
 ```
 
-The command generates the response as above, then evaluates it with the deterministic oracle and prints each check plus the final `PASS`/`FAIL`. It makes one real LLM request. The process exits with code 0 on `PASS` and 1 on `FAIL`, so it can be used from CI/scripts. Other case IDs are rejected with a clear error: the oracle only supports `fees_conversion_01` so far.
+The command generates the response as above, then evaluates it with the deterministic oracle and prints each check plus the final `PASS`/`FAIL`. It makes one real LLM request.
+
+Run the semantic case:
+
+```bash
+uv run python -m relaypay_support_evals.eval --case request_cancellation_gap_01
+```
+
+This sends the generated response to the LLM judge along with the case's `expected` and `forbidden` criteria. It makes two real LLM requests: one for generation and one for judgment.
+
+For both commands the process exits with code 0 on `PASS` and 1 on `FAIL`, so it can be used from CI/scripts. Other case IDs are rejected with a clear error: only `fees_conversion_01` and `request_cancellation_gap_01` are supported so far.
 
 Run the deterministic tests:
 
@@ -131,7 +147,12 @@ Retrieval selects relevant knowledge for the question. The LLM uses that context
 
 At this stage, `relevant_rules` in each golden case provides the known-good context directly, so generation can be tested without retrieval.
 
-A first deterministic oracle for `fees_conversion_01` exists already; retrieval and broader oracles are separate future steps: retrieval will select knowledge automatically, while further oracles will cover cases that need semantic judgment.
+There are now two evaluators:
+
+- **Deterministic oracle** (`oracle.py`): fast, cheap, and reproducible, but limited to surface patterns. It can miss meaning or be fooled by negation.
+- **Semantic LLM judge** (`semantic_judge.py`): understands paraphrase and intent, but costs another LLM call and requires structured output parsing.
+
+The right choice depends on the case. `fees_conversion_01` is mostly about numbers and forbidden amounts, so a deterministic check is enough. `request_cancellation_gap_01` is about what the response does *not* claim, which is easier to express as semantic criteria than as token rules.
 
 ## Key concepts
 
@@ -147,17 +168,27 @@ A first deterministic oracle for `fees_conversion_01` exists already; retrieval 
 
 ## Next step
 
-The current executable path is:
+The current executable paths are:
 
 ```text
-one golden case (fees_conversion_01)
+fees_conversion_01
 → known-good context from relevant_rules
 → one LLM response
-→ one deterministic oracle
-→ one evaluation result
+→ deterministic oracle
+→ PASS/FAIL
 ```
 
-The next step is to extend evaluation to more cases: semantic judgments that a surface-form oracle cannot cover will need a human rubric or, later, an LLM-based judge.
+and:
+
+```text
+request_cancellation_gap_01
+→ known-good context from relevant_rules
+→ one LLM response
+→ semantic LLM judge
+→ per-criterion PASS/FAIL
+```
+
+The next step is to extend evaluation to more cases, choosing a deterministic or semantic evaluator for each case based on whether surface checks are enough.
 
 Retrieval will be added after generation and evaluation can be understood independently.
 
